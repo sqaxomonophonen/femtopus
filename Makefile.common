@@ -1,0 +1,14 @@
+all: $(EXE)
+
+a.o: a.c
+	$(CC) $(CFLAGS) -c a.c
+
+main.o: main.c mat.h
+	$(CC) $(CFLAGS) -c main.c
+
+$(EXE): main.o a.o
+	$(CC) main.o a.o -o $(EXE) $(LINK)
+
+clean:
+	rm -rf *.o $(EXE)
+

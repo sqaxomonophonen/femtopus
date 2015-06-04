@@ -3,9 +3,9 @@ all: $(EXE) lumps
 LUMPSRC=workbench/lumps
 LUMPDST=data/lumps
 
-$(LUMPDST)/%.lump: $(LUMPSRC)/%.blend
+$(LUMPDST)/%.lump.lua: $(LUMPSRC)/%.blend tools/exporters/export_lump.py
 	./tools/exporters/export_lump.sh $< $@
-lumps: $(patsubst $(LUMPSRC)/%.blend, $(LUMPDST)/%.lump, $(wildcard $(LUMPSRC)/*.blend))
+lumps: $(patsubst $(LUMPSRC)/%.blend, $(LUMPDST)/%.lump.lua, $(wildcard $(LUMPSRC)/*.blend))
 
 a.o: a.c
 	$(CC) $(CFLAGS) -c a.c
@@ -17,5 +17,5 @@ $(EXE): main.o a.o
 	$(CC) main.o a.o -o $(EXE) $(LINK)
 
 clean:
-	rm -rf *.o $(EXE) $(LUMPDST)/*.lump
+	rm -rf *.o $(EXE) $(LUMPDST)/*.lump.lua
 

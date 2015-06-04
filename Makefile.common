@@ -4,7 +4,7 @@ LUMPSRC=workbench/lumps
 LUMPDST=data/lumps
 
 $(LUMPDST)/%.lump: $(LUMPSRC)/%.blend
-	./workbench/export_lump.sh $< $@
+	./tools/exporters/export_lump.sh $< $@
 lumps: $(patsubst $(LUMPSRC)/%.blend, $(LUMPDST)/%.lump, $(wildcard $(LUMPSRC)/*.blend))
 
 a.o: a.c

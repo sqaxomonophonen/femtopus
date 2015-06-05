@@ -81,6 +81,8 @@ inline static void* scratch_alloc_aligned_log2(struct scratch* s, size_t sz, int
 {
 	scratch_assert_valid(s);
 
+	if (sz == 0) return NULL;
+
 	int alignment = 1 << alignment_log2;
 	int mask = alignment - 1;
 	int again;

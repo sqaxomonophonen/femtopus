@@ -110,13 +110,11 @@ inline static void* scratch_alloc_aligned_log2(struct scratch* s, size_t sz, int
 
 			// allocate new block if end of linked list
 			void** next = (void**)s->current;
-			if (*next != NULL) {
-				s->current = *next;
-			} else {
+			if (*next == NULL) {
 				AN(*next = malloc(s->increment));
-				s->current = *next;
-				*((void**)s->current) = NULL;
+				*((void**)*next) = NULL;
 			}
+			s->current = *next;
 			s->used_in_current = sizeof(void*);
 
 			// try again, this time allocate or bust

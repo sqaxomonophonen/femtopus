@@ -1,4 +1,4 @@
-PKGS=sdl2 epoxy
+PKGS=sdl2 epoxy lua
 CC=clang
 OPT=-Ofast
 #OPT=-O0 -ggdb3

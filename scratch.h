@@ -119,7 +119,7 @@ inline static void* scratch_alloc_aligned_log2(struct scratch* s, size_t sz, int
 		}
 
 		// return allocated memory
-		return (void*) ((uint8_t)s->current + offset);
+		return (void*) ((uint8_t*)s->current + offset);
 	}
 	arghf("unreachable");
 }

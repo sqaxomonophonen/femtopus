@@ -26,8 +26,8 @@ struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, int chunk_index)
 struct lvl_chunk* lvl_init_chunk(struct lvl* lvl, int chunk_index, int n_vertices, int polygon_list_size)
 {
 	struct lvl_chunk* chunk = lvl_get_chunk(lvl, chunk_index);
-	chunk->vertices = scratch_alloc_a4(&lvl->scratch, sizeof(*chunk->vertices) * n_vertices);
-	chunk->polygon_list = scratch_alloc_a4(&lvl->scratch, sizeof(*chunk->polygon_list) * polygon_list_size);
+	chunk->vertices = scratch_alloc(&lvl->scratch, sizeof(*chunk->vertices) * n_vertices);
+	chunk->polygon_list = scratch_alloc(&lvl->scratch, sizeof(*chunk->polygon_list) * polygon_list_size);
 	return chunk;
 }
 
@@ -44,7 +44,7 @@ struct lvl_portal* lvl_init_portal(struct lvl* lvl, int portal_index, int n_conv
 	portal->n_convex_vertex_pairs = n_convex_vertex_pairs;
 	portal->n_additional_vertex_pairs = n_additional_vertex_pairs;
 	int n_total = n_convex_vertex_pairs + n_additional_vertex_pairs;
-	portal->vertex_pairs = scratch_alloc_a4(&lvl->scratch, sizeof(*portal->vertex_pairs) * n_total);
+	portal->vertex_pairs = scratch_alloc(&lvl->scratch, sizeof(*portal->vertex_pairs) * n_total);
 	return portal;
 }
 

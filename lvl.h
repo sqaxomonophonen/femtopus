@@ -11,23 +11,26 @@ struct lvl_vertex {
 };
 
 struct lvl_chunk {
+	int n_vertices;
 	struct lvl_vertex* vertices;
 
 	/*
 	polygon list encoded as:
-	  number of polygons (0 terminates list)
+	  vertex count (0 terminates list)
 	  material index
-	    vertex count (0 terminates list)
-	    vertex indices...
-	    ...
+	  vertex indices...
 	  ...
-	(pre-sort by material index?)
+	  (sort by material index if you're a nice guy)
 	*/
 	uint32_t* polygon_list;
+
+	int n_portal_indices;
+	uint32_t* portal_indices;
 };
 
+
 struct lvl_portal {
-	uint32_t chunks[2];
+	uint32_t chunk_indices[2];
 
 	/*
 	vertex pairs link vertices in two chunks together. each pair in
@@ -71,12 +74,15 @@ struct lvl {
 void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials);
 
 struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, int chunk_index);
-struct lvl_chunk* lvl_init_chunk(struct lvl* lvl, int chunk_index, int n_vertices, int polygon_list_size);
+struct lvl_chunk* lvl_init_chunk(struct lvl* lvl, int chunk_index, int n_vertices, int polygon_list_size, int n_portal_indices);
 
 struct lvl_portal* lvl_get_portal(struct lvl* lvl, int portal_index);
 struct lvl_portal* lvl_init_portal(struct lvl* lvl, int portal_index, int n_convex_vertex_pairs, int n_additional_vertex_pairs);
 
 struct lvl_material* lvl_get_material(struct lvl* lvl, int material_index);
+
+int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, int n_vertices, int polygon_list_size, char* errstr1024);
+int lvl_validate_misc(struct lvl* lvl, char* errstr1024);
 
 #define LVL_H
 #endif

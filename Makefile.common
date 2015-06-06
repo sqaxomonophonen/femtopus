@@ -3,6 +3,9 @@ all: $(EXE) lumps
 LUMPSRC=workbench/lumps
 LUMPDST=data/lumps
 
+LUA_CFLAGS=-Iext/lua-5.3.0/src
+LINK+=-Lext/lua-5.3.0/src -llua -lm -ldl
+
 $(LUMPDST)/%.lump.lua: $(LUMPSRC)/%.blend tools/exporters/export_lump.py
 	./tools/exporters/export_lump.sh $< $@
 lumps: $(patsubst $(LUMPSRC)/%.blend, $(LUMPDST)/%.lump.lua, $(wildcard $(LUMPSRC)/*.blend))
@@ -17,7 +20,7 @@ lvl.o: lvl.c lvl.h scratch.h
 	$(CC) $(CFLAGS) -c lvl.c
 
 llvl.o: llvl.c llvl.h lvl.h
-	$(CC) $(CFLAGS) -c llvl.c
+	$(CC) $(CFLAGS) $(LUA_CFLAGS) -c llvl.c
 
 main.o: main.c mat.h
 	$(CC) $(CFLAGS) -c main.c

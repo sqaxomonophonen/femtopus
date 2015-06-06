@@ -28,7 +28,10 @@ for bo in bpy.data.objects:
 				if uv_layer:
 					uv = uv_layer.data[i].uv
 				lump_polygon["vs"].append({"co": tuple(co), "uv": tuple(uv)})
-			lump_polygon["mt"] = mesh.materials[polygon.material_index].name
+			try:
+				lump_polygon["mt"] = mesh.materials[polygon.material_index].name
+			except IndexError:
+				lump_polygon["mt"] = "null"
 			lump["polygons"].append(lump_polygon)
 
 output = lson.dumps(lump)

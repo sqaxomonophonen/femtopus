@@ -72,14 +72,15 @@ struct lvl {
 
 
 void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials);
+void lvl_free(struct lvl* lvl);
 
-struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, int chunk_index);
+struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, uint32_t chunk_index);
 struct lvl_chunk* lvl_init_chunk(struct lvl* lvl, int chunk_index, int n_vertices, int polygon_list_size, int n_portal_indices);
 
-struct lvl_portal* lvl_get_portal(struct lvl* lvl, int portal_index);
+struct lvl_portal* lvl_get_portal(struct lvl* lvl, uint32_t portal_index);
 struct lvl_portal* lvl_init_portal(struct lvl* lvl, int portal_index, int n_convex_vertex_pairs, int n_additional_vertex_pairs);
 
-struct lvl_material* lvl_get_material(struct lvl* lvl, int material_index);
+struct lvl_material* lvl_get_material(struct lvl* lvl, uint32_t material_index);
 
 int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, int n_vertices, int polygon_list_size, char* errstr1024);
 int lvl_validate_misc(struct lvl* lvl, char* errstr1024);

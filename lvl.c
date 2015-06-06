@@ -18,9 +18,13 @@ void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials)
 	lvl->materials = scratch_alloc(&lvl->scratch, sizeof(*lvl->materials) * n_materials);
 }
 
-struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, int chunk_index)
+void lvl_free(struct lvl* lvl)
 {
-	ASSERT(chunk_index > 0);
+	scratch_free(&lvl->scratch);
+}
+
+struct lvl_chunk* lvl_get_chunk(struct lvl* lvl, uint32_t chunk_index)
+{
 	ASSERT(chunk_index < lvl->n_chunks);
 	return &lvl->chunks[chunk_index];
 }
@@ -40,9 +44,8 @@ struct lvl_chunk* lvl_init_chunk(struct lvl* lvl, int chunk_index, int n_vertice
 	return chunk;
 }
 
-struct lvl_portal* lvl_get_portal(struct lvl* lvl, int portal_index)
+struct lvl_portal* lvl_get_portal(struct lvl* lvl, uint32_t portal_index)
 {
-	ASSERT(portal_index > 0);
 	ASSERT(portal_index < lvl->n_portals);
 	return &lvl->portals[portal_index];
 }
@@ -57,9 +60,8 @@ struct lvl_portal* lvl_init_portal(struct lvl* lvl, int portal_index, int n_conv
 	return portal;
 }
 
-struct lvl_material* lvl_get_material(struct lvl* lvl, int material_index)
+struct lvl_material* lvl_get_material(struct lvl* lvl, uint32_t material_index)
 {
-	ASSERT(material_index > 0);
 	ASSERT(material_index < lvl->n_materials);
 	return &lvl->materials[material_index];
 }

@@ -88,8 +88,7 @@ inline static void* scratch_alloc_aligned_log2(struct scratch* s, size_t sz, int
 	int again;
 	for (again = 0; again < 2; again++) {
 		// align allocation
-		int off = s->used_in_current & mask;
-		if (off != 0) s->used_in_current += alignment - off;
+		s->used_in_current = (s->used_in_current + mask) & ~mask;
 
 		// save offset
 		size_t offset = s->used_in_current;

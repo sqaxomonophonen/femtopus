@@ -27,7 +27,7 @@ inline static void scratch_init(struct scratch* s, size_t increment)
 	memset(s, 0, sizeof(*s));
 	s->increment = increment;
 	AN(s->first = malloc(increment));
-	void** next = (void**)s->current;
+	void** next = (void**)s->first;
 	*next = NULL;
 	scratch_reset(s);
 }

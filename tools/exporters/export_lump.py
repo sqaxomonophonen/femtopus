@@ -14,7 +14,20 @@ dst = sys.argv[sys.argv.index('--') + 1]
 
 print("exporting lump %s => %s ..." % (src, dst))
 
-lump = {"polygons": []}
+lump = {"polygons": [], "dummies": []}
+
+def get_custom_properties(bo):
+	props = {}
+	for k in bo.keys():
+		if k[0] == "_": continue
+		props[k] = bo[k]
+	return props
+
+def flatten_matrix(m):
+	s = []
+	for v in list(m):
+		s += list(v)
+	return s
 
 for bo in bpy.data.objects:
 	if bo.type == "MESH":
@@ -33,6 +46,11 @@ for bo in bpy.data.objects:
 			except IndexError:
 				lump_polygon["mt"] = "null"
 			lump["polygons"].append(lump_polygon)
+	elif bo.type == "EMPTY":
+		dummy = {}
+		dummy["props"] = get_custom_properties(bo)
+		dummy["tx"] = flatten_matrix(bo.matrix_world)
+		lump["dummies"].append(dummy)
 
 output = lson.dumps(lump)
 with open(dst, "wb") as f: f.write(lson.dumps(lump).encode('ascii'))

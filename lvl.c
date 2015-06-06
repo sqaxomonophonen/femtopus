@@ -75,7 +75,7 @@ int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, in
 			if (value == 0) {
 				if (i == (polygon_list_size-1)) {
 					// list properly terminated
-					return 1001;
+					return 0;
 				} else {
 					snprintf(errstr1024, 1024, "polygon list prematurely terminated at index %d/%d", i, polygon_list_size);
 					return 1002;

@@ -6,11 +6,11 @@ return function (lvl)
 		for _,p in ipairs(chunk.polygons) do
 			if not matmap[p.mt] then
 				table.insert(clvl.materials, {name = p.mt})
-				matmap[p.mt] = #clvl.materials
+				matmap[p.mt] = #clvl.materials-1
 			end
 
 			table.insert(compiled_chunk.polygon_list, #p.vs)
-			table.insert(compiled_chunk.polygon_list, p.mt)
+			table.insert(compiled_chunk.polygon_list, matmap[p.mt])
 			for _,v in ipairs(p.vs) do
 				table.insert(compiled_chunk.vertices, v)
 				table.insert(compiled_chunk.polygon_list, #compiled_chunk.vertices - 1)

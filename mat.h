@@ -94,7 +94,7 @@ inline static union vec3 vec3_add(union vec3 a, union vec3 b)
 {
 	union vec3 r;
 	for (int i = 0; i < 3; i++) {
-		r.s[i] = a.s[i] - b.s[i];
+		r.s[i] = a.s[i] + b.s[i];
 	}
 	return r;
 }

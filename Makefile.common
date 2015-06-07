@@ -18,7 +18,7 @@ a.o: a.c a.h
 mat.o: mat.c mat.h
 	$(CC) $(CFLAGS) -c mat.c
 
-lvl.o: lvl.c lvl.h scratch.h
+lvl.o: lvl.c lvl.h scratch.h mat.h
 	$(CC) $(CFLAGS) -c lvl.c
 
 llvl.o: llvl.c llvl.h lvl.h

@@ -52,11 +52,14 @@ int main(int argc, char** argv)
 	int ctrl_backward = 0;
 	int ctrl_left = 0;
 	int ctrl_right = 0;
+	int ctrl_jump = 0;
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	struct lvl_entity view_entity;
 	memset(&view_entity, 0, sizeof(view_entity));
+
+	float dt = 1.0 / 60.0f;
 
 	int exiting = 0;
 	while (!exiting) {
@@ -83,6 +86,7 @@ int main(int argc, char** argv)
 				{SDLK_s, &ctrl_backward},
 				{SDLK_a, &ctrl_left},
 				{SDLK_d, &ctrl_right},
+				{SDLK_SPACE, &ctrl_jump},
 				{-1, NULL}
 			};
 
@@ -109,9 +113,10 @@ int main(int argc, char** argv)
 			float speed = 0.1f;
 			float forward = (float)(ctrl_forward - ctrl_backward) * speed;
 			float right = (float)(ctrl_right - ctrl_left) * speed;
-			lvl_entity_flymove(&lvl, &view_entity, forward, right);
-			//lvl_entity_clipmove(&lvl, &view_entity, forward, right);
+			lvl_entity_move(&view_entity, forward, right, ctrl_jump ? 1.0 : 0.0);
 		}
+
+		lvl_entity_update(&lvl, &view_entity, dt);
 
 		render_lvl(&render, &lvl, &view_entity);
 		render_flip(&render);

@@ -16,6 +16,8 @@ void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials)
 
 	lvl->n_materials = n_materials;
 	lvl->materials = scratch_alloc(&lvl->scratch, sizeof(*lvl->materials) * n_materials);
+
+	lvl->gravity = vec3_xyz(0, -3, 0);
 }
 
 void lvl_free(struct lvl* lvl)
@@ -169,9 +171,101 @@ void lvl_entity_dlook(struct lvl_entity* e, float dyaw, float dpitch)
 	if (e->pitch < -pitch_limit) e->pitch = -pitch_limit;
 }
 
+#if 0
 void lvl_entity_flymove(struct lvl* lvl, struct lvl_entity* e, float forward, float right)
 {
 	e->position = vec3_add(e->position, vec3_move(e->yaw, e->pitch, forward, right));
+}
+#endif
+
+void lvl_entity_move(struct lvl_entity* e, float forward, float right, float jump)
+{
+	e->move_forward = forward;
+	e->move_right = right;
+	e->move_jump = jump;
+}
+
+void lvl_entity_accelerate(struct lvl_entity* e, union vec3 a, float dt)
+{
+	e->velocity = vec3_add(e->velocity, vec3_scale(a, dt));
+}
+
+void lvl_entity_impulse(struct lvl_entity* e, union vec3 imp)
+{
+	e->velocity = vec3_add(e->velocity, imp);
+}
+
+static struct aabb lvl_entity_aabb(struct lvl_entity* e)
+{
+	struct aabb aabb;
+
+	aabb.center = e->position;
+
+	float height = 1;
+	float r = 0.5;
+	union vec3 extent = {{r, height, r}};
+	aabb.extent = extent;
+
+	return aabb;
+}
+
+static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec3 r, int n_steps)
+{
+	union vec3 rstep = vec3_scale(r, 1.0 / (float)n_steps);
+
+	for (int i = 0; i < n_steps; i++) {
+		e->position = vec3_add(e->position, rstep);
+		struct aabb aabb = lvl_entity_aabb(e);
+
+		struct lvl_chunk* chunk = lvl_get_chunk(lvl, 0); // XXX
+		AN(chunk);
+		AN(chunk->polygon_list);
+		int cursor = 0;
+
+		while (1) {
+			int vertex_count = chunk->polygon_list[cursor++];
+			if (vertex_count == 0) break;
+
+			cursor++; // skip material index
+
+			ASSERT(vertex_count <= 32);
+
+			union vec3 polygon[32];
+			for (int i = 0; i < vertex_count; i++) {
+				struct lvl_vertex lv = chunk->vertices[chunk->polygon_list[cursor++]];
+				polygon[i] = lv.co;
+			}
+
+			union vec3 mtv;
+			int intersect = polygon_aabb_mtv(
+				aabb,
+				polygon,
+				vertex_count,
+				&mtv);
+
+			if (intersect) {
+				float rmtv = vec3_length(mtv);
+				if (rmtv > 1e-8) {
+					union vec3 normal = vec3_scale(mtv, 1.0 / rmtv);
+					e->position = vec3_add(e->position, mtv);
+					e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
+				}
+			}
+		}
+	}
+}
+
+void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
+{
+	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, e->pitch, e->move_forward, e->move_right), 10);
+	lvl_entity_accelerate(e, vec3_add(lvl->gravity, moveacc), dt);
+	union vec3 jump_vector = {{0,0.4,0}};
+	lvl_entity_impulse(e, vec3_scale(jump_vector, e->move_jump));
+	e->move_forward = 0;
+	e->move_right = 0;
+	e->move_jump = 0;
+
+	lvl_entity_clipmove(lvl, e, vec3_scale(e->velocity, dt), 8);
 }
 
 struct mat44 lvl_entity_view(struct lvl_entity* e)

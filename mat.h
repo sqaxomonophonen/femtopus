@@ -45,6 +45,10 @@ struct mat44 {
 	float s[4*4];
 };
 
+struct aabb {
+	union vec3 center;
+	union vec3 extent;
+};
 
 
 
@@ -82,6 +86,12 @@ inline static union vec2 vec2_normalize(union vec2 v)
 
 ////////////////////////////////////////////////////
 // vec3_*
+
+inline static union vec3 vec3_xyz(float x, float y, float z)
+{
+	union vec3 v = {{x,y,z}};
+	return v;
+}
 
 inline static void vec3_dump(union vec3 v)
 {
@@ -336,7 +346,7 @@ inline static struct mat44 mat44_perspective(float fovy, float aspect, float zne
 // returns 0 if no intersection
 // returns 1 if intersection and *mtv will be populated with minimal translation vector
 int polygon_aabb_mtv(
-	union vec3 aabb_center, union vec3 aabb_extent,
+	struct aabb aabb,
 	union vec3* polygon,
 	int polygon_n,
 	union vec3* mtv);

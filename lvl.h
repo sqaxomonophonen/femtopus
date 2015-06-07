@@ -53,7 +53,9 @@ struct lvl_material {
 struct lvl_entity {
 	uint32_t chunk_index;
 	union vec3 position;
+	union vec3 velocity;
 	float yaw, pitch;
+	float move_forward, move_right, move_jump;
 };
 
 struct lvl {
@@ -67,6 +69,8 @@ struct lvl {
 
 	int n_materials;
 	struct lvl_material* materials;
+
+	union vec3 gravity;
 };
 
 
@@ -85,7 +89,10 @@ int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, in
 int lvl_validate_misc(struct lvl* lvl, char* errstr1024);
 
 void lvl_entity_dlook(struct lvl_entity* e, float dyaw, float dpitch);
-void lvl_entity_flymove(struct lvl* lvl, struct lvl_entity* e, float forward, float right);
+void lvl_entity_move(struct lvl_entity* e, float forward, float right, float jump);
+void lvl_entity_accelerate(struct lvl_entity* e, union vec3 a, float dt);
+void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt);
+//void lvl_entity_flymove(struct lvl* lvl, struct lvl_entity* e, float forward, float right);
 
 struct mat44 lvl_entity_view(struct lvl_entity* e);
 

@@ -57,20 +57,21 @@ void render_lvl(struct render* render, struct lvl* lvl, struct lvl_entity* entit
 	shader_uniform_mat44(&render->nullmat_shader, "u_projection", projection);
 
 	struct lvl_chunk* chunk = lvl_get_chunk(lvl, 0);
+	AN(chunk);
+	AN(chunk->polygon_list);
 	int cursor = 0;
 
 	while (1) {
-		AN(chunk);
-		AN(chunk->polygon_list);
 		int vertex_count = chunk->polygon_list[cursor++];
 		if (vertex_count == 0) break;
-		int tri_count = vertex_count - 2;
+
 		uint32_t material_index = chunk->polygon_list[cursor++];
 		(void) material_index;
 
 		struct lvl_vertex vs[3];
 		vs[0] = chunk->vertices[chunk->polygon_list[cursor++]];
 
+		int tri_count = vertex_count - 2;
 		for (int i = 0; i < tri_count; i++) {
 			vs[1] = chunk->vertices[chunk->polygon_list[cursor++]];
 			vs[2] = chunk->vertices[chunk->polygon_list[cursor]];

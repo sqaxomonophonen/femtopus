@@ -2,7 +2,7 @@
 #include "a.h"
 
 int polygon_aabb_mtv(
-	union vec3 aabb_center, union vec3 aabb_extent,
+	struct aabb aabb,
 	union vec3* polygon,
 	int polygon_n,
 	union vec3* mtv)
@@ -33,8 +33,8 @@ int polygon_aabb_mtv(
 			float max = 0;
 			for (int i = 0; i < polygon_n; i++) {
 				union vec2 v = {{
-					polygon[i].s[ai] - aabb_center.s[ai],
-					polygon[i].s[ai_prev] - aabb_center.s[ai_prev]
+					polygon[i].s[ai] - aabb.center.s[ai],
+					polygon[i].s[ai_prev] - aabb.center.s[ai_prev]
 				}};
 				float d = vec2_dot(x, v);
 				if (i == 0) {
@@ -47,7 +47,7 @@ int polygon_aabb_mtv(
 			}
 
 			// project aabb onto axis
-			float e = aabb_extent.s[ai] * fabsf(x.s[ai]) + aabb_extent.s[ai_prev] * fabsf(x.s[ai_prev]);
+			float e = aabb.extent.s[ai] * fabsf(x.s[ai]) + aabb.extent.s[ai_prev] * fabsf(x.s[ai_prev]);
 
 			float ld = 0;
 			if (min > e || max < -e) {
@@ -80,7 +80,7 @@ int polygon_aabb_mtv(
 		float min = 0;
 		float max = 0;
 		for (int i = 0; i < polygon_n; i++) {
-			float v = polygon[i].s[ai] - aabb_center.s[ai];
+			float v = polygon[i].s[ai] - aabb.center.s[ai];
 			if (i == 0) {
 				min = max = v;
 			} else if (v < min) {
@@ -89,7 +89,7 @@ int polygon_aabb_mtv(
 				max = v;
 			}
 		}
-		float e = aabb_extent.s[ai];
+		float e = aabb.extent.s[ai];
 
 		float ld = 0;
 		if (min > e || max < -e) {
@@ -116,9 +116,9 @@ int polygon_aabb_mtv(
 		union vec3 e0 = vec3_sub(polygon[0], polygon[1]);
 		union vec3 e1 = vec3_sub(polygon[2], polygon[1]);
 		union vec3 x = vec3_normalize(vec3_cross(e0, e1));
-		float d = vec3_dot(x, vec3_sub(polygon[0], aabb_center));
+		float d = vec3_dot(x, vec3_sub(polygon[0], aabb.center));
 		float e = 0;
-		for (int i = 0; i < 3; i++) e += aabb_extent.s[i] * fabsf(x.s[i]);
+		for (int i = 0; i < 3; i++) e += aabb.extent.s[i] * fabsf(x.s[i]);
 		if (fabs(d) > e) {
 			return 0;
 		} else {

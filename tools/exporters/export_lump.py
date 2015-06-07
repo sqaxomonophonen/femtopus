@@ -29,13 +29,15 @@ def flatten_matrix(m):
 		s += list(v)
 	return s
 
+opengl_tx = Matrix.Rotation(-math.pi/2, 4, "X")
+
 for bo in bpy.data.objects:
 	if bo.type == "MESH":
 		mesh = bo.to_mesh(bpy.context.scene, True, "PREVIEW")
 		for polygon in mesh.polygons:
 			lump_polygon = {"vs":[]}
 			for i in range(polygon.loop_start, polygon.loop_start + polygon.loop_total):
-				co = bo.matrix_world * mesh.vertices[mesh.loops[i].vertex_index].co
+				co = opengl_tx * bo.matrix_world * mesh.vertices[mesh.loops[i].vertex_index].co
 				uv = Vector((0,0))
 				uv_layer = mesh.uv_layers.active
 				if uv_layer:

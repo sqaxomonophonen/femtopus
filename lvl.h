@@ -50,12 +50,11 @@ struct lvl_material {
 	char name[LVL_MATERIAL_NAME_MAX_LENGTH];
 };
 
-#if 0
 struct lvl_entity {
-	uint32_t inside_chunk;
+	uint32_t chunk_index;
 	union vec3 position;
+	float yaw, pitch;
 };
-#endif
 
 struct lvl {
 	struct scratch scratch;
@@ -84,6 +83,11 @@ struct lvl_material* lvl_get_material(struct lvl* lvl, uint32_t material_index);
 
 int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, int n_vertices, int polygon_list_size, char* errstr1024);
 int lvl_validate_misc(struct lvl* lvl, char* errstr1024);
+
+void lvl_entity_dlook(struct lvl_entity* e, float dyaw, float dpitch);
+void lvl_entity_flymove(struct lvl* lvl, struct lvl_entity* e, float forward, float right);
+
+struct mat44 lvl_entity_view(struct lvl_entity* e);
 
 #define LVL_H
 #endif

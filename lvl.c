@@ -159,3 +159,26 @@ int lvl_validate_misc(struct lvl* lvl, char* errstr1024)
 
 	return 0;
 }
+
+void lvl_entity_dlook(struct lvl_entity* e, float dyaw, float dpitch)
+{
+	e->yaw += dyaw;
+	e->pitch += dpitch;
+	float pitch_limit = 90;
+	if (e->pitch > pitch_limit) e->pitch = pitch_limit;
+	if (e->pitch < -pitch_limit) e->pitch = -pitch_limit;
+}
+
+void lvl_entity_flymove(struct lvl* lvl, struct lvl_entity* e, float forward, float right)
+{
+	e->position = vec3_add(e->position, vec3_move(e->yaw, e->pitch, forward, right));
+}
+
+struct mat44 lvl_entity_view(struct lvl_entity* e)
+{
+	struct mat44 m = mat44_identity();
+	m = mat44_rotate_x(m, e->pitch);
+	m = mat44_rotate_y(m, e->yaw);
+	m = mat44_translate(m, vec3_scale(e->position, -1));
+	return m;
+}

@@ -138,3 +138,23 @@ int polygon_aabb_mtv(
 	if (mtv) *mtv = vec3_scale(best_axis, -best_distance);
 	return ret;
 }
+
+union vec3 vec3_move(float yaw, float pitch, float forward, float right)
+{
+	union vec3 move;
+
+	float yaw_s = sinf(DEG2RAD(yaw));
+	float yaw_c = cosf(DEG2RAD(yaw));
+
+	float pitch_s = sinf(DEG2RAD(pitch));
+	float pitch_c = cosf(DEG2RAD(pitch));
+
+	union vec3 fv = {{ yaw_s * pitch_c, -pitch_s, -yaw_c * pitch_c }};
+	move = vec3_scale(fv, forward);
+
+	union vec3 rv = {{ yaw_c, 0, yaw_s, }};
+	move = vec3_add(move, vec3_scale(rv, right));
+
+	return move;
+}
+

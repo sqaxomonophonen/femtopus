@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "a.h"
 
@@ -81,6 +82,13 @@ inline static union vec2 vec2_normalize(union vec2 v)
 
 ////////////////////////////////////////////////////
 // vec3_*
+
+inline static void vec3_dump(union vec3 v)
+{
+	printf("[");
+	for (int i = 0; i < 3; i++) printf("%.4f%s", v.s[i], i < 2 ? ", " : "");
+	printf("]\n");
+}
 
 inline static union vec3 vec3_add(union vec3 a, union vec3 b)
 {

@@ -1,6 +1,7 @@
-#!/bin/sh
-for s in XXX FIXME TODO ; do
-	echo "==== $s ===="
-	git grep -nw $s
+#!/bin/bash
+for s in xxx fixme todo ; do
+	S="${s^^}"
+	echo "==== $S ===="
+	git grep -nw $S
 	echo
 done

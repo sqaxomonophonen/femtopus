@@ -47,7 +47,7 @@ int polygon_aabb_mtv(
 			}
 
 			// project aabb onto axis
-			float e = aabb.extent.s[ai] * fabsf(x.s[ai]) + aabb.extent.s[ai_prev] * fabsf(x.s[ai_prev]);
+			float e = aabb.extent.s[ai] * fabsf(x.s[0]) + aabb.extent.s[ai_prev] * fabsf(x.s[1]);
 
 			float ld = 0;
 			if (min > e || max < -e) {

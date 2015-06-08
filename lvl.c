@@ -219,48 +219,87 @@ static struct aabb lvl_entity_aabb(struct lvl_entity* e)
 	return aabb;
 }
 
-static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec3 r, int n_steps)
+
+struct lvl_aabb_mtv_iterator {
+	// setup
+	struct lvl* lvl;
+	struct aabb aabb;
+	uint32_t origin_chunk_index;
+
+	// state
+	int polygon_list_cursor;
+
+	// result
+	uint32_t material_index;
+	union vec3 mtv;
+};
+
+inline static void lvl_aabb_mtv_iterator_init(struct lvl_aabb_mtv_iterator* it, struct lvl* lvl, struct aabb aabb, uint32_t origin_chunk_index)
 {
+	memset(it, 0, sizeof(*it));
+	it->lvl = lvl;
+	it->aabb = aabb;
+	it->origin_chunk_index = origin_chunk_index;
+}
+
+inline static void lvl_aabb_mtv_iterator_init_from_entity(struct lvl_aabb_mtv_iterator* it, struct lvl* lvl, struct lvl_entity* e)
+{
+	lvl_aabb_mtv_iterator_init(it, lvl, lvl_entity_aabb(e), e->chunk_index);
+}
+
+inline static void lvl_aabb_mtv_iterator_init_from_entity_and_offset(struct lvl_aabb_mtv_iterator* it, struct lvl* lvl, struct lvl_entity* e, union vec3 offset)
+{
+	// TODO must consider that offset may push entity into another chunk;
+	// should use the same logic as entities crossing portals
+	struct aabb aabb = lvl_entity_aabb(e);
+	aabb.center = vec3_add(aabb.center, offset);
+	lvl_aabb_mtv_iterator_init(it, lvl, aabb, e->chunk_index);
+}
+
+inline static int lvl_aabb_mtv_iterator_next(struct lvl_aabb_mtv_iterator* it)
+{
+	struct lvl_chunk* chunk = lvl_get_chunk(it->lvl, it->origin_chunk_index); // FIXME aabb may intersect portals into other chunks
+
+	AN(chunk);
+	AN(chunk->polygon_list);
+
+	while (1) {
+		uint32_t vertex_count = chunk->polygon_list[it->polygon_list_cursor++];
+		if (vertex_count == 0) break;
+
+		it->material_index = chunk->polygon_list[it->polygon_list_cursor++];
+
+		ASSERT(vertex_count <= 32);
+
+		union vec3 polygon[32];
+		for (int i = 0; i < vertex_count; i++) {
+			struct lvl_vertex lv = chunk->vertices[chunk->polygon_list[it->polygon_list_cursor++]];
+			polygon[i] = lv.co;
+		}
+
+		if (polygon_aabb_mtv(it->aabb, polygon, vertex_count, &it->mtv)) return 1;
+	}
+
+	// TODO check against portals (need a smallish stack?)
+
+	return 0;
+}
+
+static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec3 r)
+{
+	int n_steps = 8; // TODO determine based on length of r?
 	union vec3 rstep = vec3_scale(r, 1.0 / (float)n_steps);
 
 	for (int i = 0; i < n_steps; i++) {
 		e->position = vec3_add(e->position, rstep);
-		struct aabb aabb = lvl_entity_aabb(e);
-
-		struct lvl_chunk* chunk = lvl_get_chunk(lvl, 0); // XXX
-		AN(chunk);
-		AN(chunk->polygon_list);
-		int cursor = 0;
-
-		while (1) {
-			uint32_t vertex_count = chunk->polygon_list[cursor++];
-			if (vertex_count == 0) break;
-
-			uint32_t material_index = chunk->polygon_list[cursor++];
-			(void) material_index;
-
-			ASSERT(vertex_count <= 32);
-
-			union vec3 polygon[32];
-			for (int i = 0; i < vertex_count; i++) {
-				struct lvl_vertex lv = chunk->vertices[chunk->polygon_list[cursor++]];
-				polygon[i] = lv.co;
-			}
-
-			union vec3 mtv;
-			int intersect = polygon_aabb_mtv(
-				aabb,
-				polygon,
-				vertex_count,
-				&mtv);
-
-			if (intersect) {
-				float rmtv = vec3_length(mtv);
-				if (rmtv > 1e-8) {
-					union vec3 normal = vec3_scale(mtv, 1.0 / rmtv);
-					e->position = vec3_add(e->position, mtv);
-					e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
-				}
+		struct lvl_aabb_mtv_iterator it;
+		lvl_aabb_mtv_iterator_init_from_entity(&it, lvl, e);
+		while (lvl_aabb_mtv_iterator_next(&it)) {
+			float rmtv = vec3_length(it.mtv);
+			if (rmtv > 1e-8) {
+				union vec3 normal = vec3_scale(it.mtv, 1.0 / rmtv);
+				e->position = vec3_add(e->position, it.mtv);
+				e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
 			}
 		}
 	}
@@ -268,15 +307,50 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 
 void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 {
-	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, e->pitch, e->move_forward, e->move_right), 50);
+	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, 0, e->move_forward, e->move_right), e->grounded ? 500 : 50);
+
 	lvl_entity_accelerate(e, vec3_add(lvl->gravity, moveacc), dt);
-	union vec3 jump_vector = {{0,0.6,0}};
-	lvl_entity_impulse(e, vec3_scale(jump_vector, e->move_jump));
+
+	if (e->grounded) {
+		union vec3 jump_vector = {{0,6,0}};
+		lvl_entity_impulse(e, vec3_scale(jump_vector, e->move_jump));
+	}
+
 	e->move_forward = 0;
 	e->move_right = 0;
 	e->move_jump = 0;
 
-	lvl_entity_clipmove(lvl, e, vec3_scale(e->velocity, dt), 8);
+	lvl_entity_clipmove(lvl, e, vec3_scale(e->velocity, dt));
+
+	{
+		// ground check
+		union vec3 gravity_direction = vec3_normalize(lvl->gravity);
+
+		union vec3 ground_offset = vec3_scale(gravity_direction, 3e-3);
+		struct lvl_aabb_mtv_iterator it;
+		lvl_aabb_mtv_iterator_init_from_entity_and_offset(&it, lvl, e, ground_offset);
+		union vec3 dominant_mtv = {{0,0,0}};
+		float dominant_mtv_sqrlen = 0;
+		while (lvl_aabb_mtv_iterator_next(&it)) {
+			float sqrlen = vec3_dot(it.mtv, it.mtv);
+			if (sqrlen > dominant_mtv_sqrlen) {
+				dominant_mtv_sqrlen = sqrlen;
+				dominant_mtv = it.mtv;
+			}
+		}
+
+		e->grounded = 0;
+		if (dominant_mtv_sqrlen > 0) {
+			union vec3 dominant_mtv_direction = vec3_normalize(dominant_mtv);
+
+			float dot = vec3_dot(gravity_direction, dominant_mtv_direction);
+			if (dot < 1e-3) {
+				e->grounded = 1;
+				// TODO consider slope
+				e->velocity = vec3_scale(e->velocity, powf(5e-04, dt));
+			}
+		}
+	}
 }
 
 struct mat44 lvl_entity_view(struct lvl_entity* e)

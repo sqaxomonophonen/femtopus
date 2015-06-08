@@ -56,6 +56,7 @@ struct lvl_entity {
 	union vec3 velocity;
 	float yaw, pitch;
 	float move_forward, move_right, move_jump;
+	uint32_t grounded:1;
 };
 
 struct lvl {

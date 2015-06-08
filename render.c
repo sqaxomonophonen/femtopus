@@ -35,7 +35,11 @@ void render_lvl(struct render* render, struct lvl* lvl, struct lvl_entity* entit
 	AN(lvl);
 	AN(entity);
 
-	glClearColor(1,0,1,1);
+	if (entity->grounded) {
+		glClearColor(1,1,0,1);
+	} else {
+		glClearColor(1,0,1,1);
+	}
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);

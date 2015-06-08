@@ -47,6 +47,18 @@ for bo in bpy.data.objects:
 				lump_polygon["mt"] = mesh.materials[polygon.material_index].name
 			except IndexError:
 				lump_polygon["mt"] = "null"
+
+			assert(len(lump_polygon["vs"]) >= 3)
+
+			vs = [Vector(v['co']) for v in lump_polygon['vs']]
+			e0 = vs[1] - vs[0]
+			e1 = vs[1] - vs[2]
+			bnormal = opengl_tx * polygon.normal
+			onormal = e1.cross(e0).normalized()
+			if bnormal.dot(onormal) < 0:
+				lump_polygon['vs'].reverse()
+				print("WARNING had to reverse vs!")
+
 			lump["polygons"].append(lump_polygon)
 	elif bo.type == "EMPTY":
 		dummy = {}

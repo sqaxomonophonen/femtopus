@@ -233,10 +233,11 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 		int cursor = 0;
 
 		while (1) {
-			int vertex_count = chunk->polygon_list[cursor++];
+			uint32_t vertex_count = chunk->polygon_list[cursor++];
 			if (vertex_count == 0) break;
 
-			cursor++; // skip material index
+			uint32_t material_index = chunk->polygon_list[cursor++];
+			(void) material_index;
 
 			ASSERT(vertex_count <= 32);
 

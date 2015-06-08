@@ -15,9 +15,6 @@ lumps: $(patsubst $(LUMPSRC)/%.blend, $(LUMPDST)/%.lump.lua, $(wildcard $(LUMPSR
 a.o: a.c a.h
 	$(CC) $(CFLAGS) -c a.c
 
-mat.o: mat.c mat.h
-	$(CC) $(CFLAGS) -c mat.c
-
 lvl.o: lvl.c lvl.h scratch.h mat.h
 	$(CC) $(CFLAGS) -c lvl.c
 
@@ -39,8 +36,8 @@ render.o: render.c render.h lvl.h nullmat.glsl.inc
 main.o: main.c mat.h
 	$(CC) $(CFLAGS) -c main.c
 
-$(EXE): main.o a.o mat.o lvl.o llvl.o shader.o vtxbuf.o render.o
-	$(CC) main.o a.o mat.o lvl.o llvl.o shader.o vtxbuf.o render.o -o $(EXE) $(LINK)
+$(EXE): main.o a.o lvl.o llvl.o shader.o vtxbuf.o render.o
+	$(CC) main.o a.o lvl.o llvl.o shader.o vtxbuf.o render.o -o $(EXE) $(LINK)
 
 clean:
 	rm -rf *.o *.glsl.inc $(EXE)

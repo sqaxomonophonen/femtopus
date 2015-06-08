@@ -369,6 +369,12 @@ inline static int polygon_aabb_mtv(
 {
 	ASSERT(polygon_n >= 3);
 
+	union vec3 polygon_normal = vec3_cross(vec3_sub(polygon[1], polygon[2]), vec3_sub(polygon[1], polygon[0]));
+	float facing = vec3_dot(polygon_normal, vec3_sub(aabb.center, polygon[1]));
+	if (facing < 0) {
+		return 0;
+	}
+
 	float best_distance = 1e10f;
 	union vec3 best_axis;
 	int ret = 0;
@@ -473,9 +479,7 @@ inline static int polygon_aabb_mtv(
 
 	// perform SAT using polygon face normal as separating axis
 	{
-		union vec3 e0 = vec3_sub(polygon[0], polygon[1]);
-		union vec3 e1 = vec3_sub(polygon[2], polygon[1]);
-		union vec3 x = vec3_normalize(vec3_cross(e0, e1));
+		union vec3 x = vec3_normalize(polygon_normal);
 		float d = vec3_dot(x, vec3_sub(polygon[0], aabb.center));
 		float e = 0;
 		for (int i = 0; i < 3; i++) e += aabb.extent.s[i] * fabsf(x.s[i]);

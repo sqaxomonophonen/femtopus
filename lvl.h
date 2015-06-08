@@ -84,6 +84,7 @@ struct lvl_portal* lvl_get_portal(struct lvl* lvl, uint32_t portal_index);
 struct lvl_portal* lvl_init_portal(struct lvl* lvl, int portal_index, int n_convex_vertex_pairs, int n_additional_vertex_pairs);
 
 struct lvl_material* lvl_get_material(struct lvl* lvl, uint32_t material_index);
+int lvl_get_material_index(struct lvl* lvl, const char* name); // -1 if not found
 
 int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, int n_vertices, int polygon_list_size, char* errstr1024);
 int lvl_validate_misc(struct lvl* lvl, char* errstr1024);

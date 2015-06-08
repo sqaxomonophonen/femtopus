@@ -68,6 +68,16 @@ struct lvl_material* lvl_get_material(struct lvl* lvl, uint32_t material_index)
 	return &lvl->materials[material_index];
 }
 
+int lvl_get_material_index(struct lvl* lvl, const char* name)
+{
+	// TODO can use binary search if materials are sorted by name
+	for (int i = 0; i < lvl->n_materials; i++) {
+		struct lvl_material* m = lvl_get_material(lvl, i);
+		if (strcmp(m->name, name) == 0) return i;
+	}
+	return -1;
+}
+
 int lvl_chunk_validate_polygon_list(struct lvl* lvl, struct lvl_chunk* chunk, int n_vertices, int polygon_list_size, char* errstr1024)
 {
 	int state = 0;

@@ -17,7 +17,7 @@ void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials)
 	lvl->n_materials = n_materials;
 	lvl->materials = scratch_alloc(&lvl->scratch, sizeof(*lvl->materials) * n_materials);
 
-	lvl->gravity = vec3_xyz(0, -3, 0);
+	lvl->gravity = vec3_xyz(0, -10, 0);
 }
 
 void lvl_free(struct lvl* lvl)

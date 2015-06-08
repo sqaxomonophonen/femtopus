@@ -267,9 +267,9 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 
 void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 {
-	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, e->pitch, e->move_forward, e->move_right), 10);
+	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, e->pitch, e->move_forward, e->move_right), 50);
 	lvl_entity_accelerate(e, vec3_add(lvl->gravity, moveacc), dt);
-	union vec3 jump_vector = {{0,0.4,0}};
+	union vec3 jump_vector = {{0,0.6,0}};
 	lvl_entity_impulse(e, vec3_scale(jump_vector, e->move_jump));
 	e->move_forward = 0;
 	e->move_right = 0;

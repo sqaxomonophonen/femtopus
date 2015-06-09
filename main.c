@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 			};
 
 			for (struct push_key* tkp = push_keys; tkp->intptr != NULL; tkp++) {
-				if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) && e.key.keysym.sym == tkp->sym) {
+				if (((e.type == SDL_KEYDOWN && !e.key.repeat) || e.type == SDL_KEYUP) && e.key.keysym.sym == tkp->sym) {
 					*(tkp->intptr) = (e.type == SDL_KEYDOWN);
 				}
 			}
@@ -114,6 +114,7 @@ int main(int argc, char** argv)
 			float forward = (float)(ctrl_forward - ctrl_backward) * speed;
 			float right = (float)(ctrl_right - ctrl_left) * speed;
 			lvl_entity_move(&view_entity, forward, right, ctrl_jump ? 1.0 : 0.0);
+			ctrl_jump = 0;
 		}
 
 		lvl_entity_update(&lvl, &view_entity, dt);

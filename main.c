@@ -110,9 +110,8 @@ int main(int argc, char** argv)
 		}
 
 		{
-			float speed = 0.1f;
-			float forward = (float)(ctrl_forward - ctrl_backward) * speed;
-			float right = (float)(ctrl_right - ctrl_left) * speed;
+			float forward = (float)(ctrl_forward - ctrl_backward);
+			float right = (float)(ctrl_right - ctrl_left);
 			lvl_entity_move(&view_entity, forward, right, ctrl_jump ? 1.0 : 0.0);
 			ctrl_jump = 0;
 		}

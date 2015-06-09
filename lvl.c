@@ -307,13 +307,62 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 
 void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 {
-	union vec3 moveacc = vec3_scale(vec3_move(e->yaw, 0, e->move_forward, e->move_right), e->grounded ? 500 : 50);
+	// ground check
+	union vec3 gravity_direction = vec3_normalize(lvl->gravity);
 
-	lvl_entity_accelerate(e, vec3_add(lvl->gravity, moveacc), dt);
+	union vec3 ground_offset = vec3_scale(gravity_direction, 3e-3);
+	struct lvl_aabb_mtv_iterator it;
+	lvl_aabb_mtv_iterator_init_from_entity_and_offset(&it, lvl, e, ground_offset);
+	union vec3 dominant_ground_mtv = {{0,0,0}};
+	float dominant_ground_mtv_sqrlen = 0;
+	while (lvl_aabb_mtv_iterator_next(&it)) {
+		float sqrlen = vec3_dot(it.mtv, it.mtv);
+		if (sqrlen > dominant_ground_mtv_sqrlen) {
+			dominant_ground_mtv_sqrlen = sqrlen;
+			dominant_ground_mtv = it.mtv;
+		}
+	}
 
-	if (e->grounded) {
-		union vec3 jump_vector = {{0,6,0}};
-		lvl_entity_impulse(e, vec3_scale(jump_vector, e->move_jump));
+	e->grounded = 0;
+	union vec3 dominant_ground_mtv_direction = {{0,0,0}};
+	float ground_dot = 0;
+	if (dominant_ground_mtv_sqrlen > 0) {
+		dominant_ground_mtv_direction = vec3_normalize(dominant_ground_mtv);
+
+		ground_dot = vec3_dot(gravity_direction, dominant_ground_mtv_direction);
+		if (ground_dot < -0.707) { // cos(45deg) ~= 0.707
+			e->grounded = 1;
+			e->velocity = vec3_scale(e->velocity, powf(5e-04, dt));
+		}
+	}
+
+	// gravity acceleration
+	if (!e->grounded) lvl_entity_accelerate(e, lvl->gravity, dt);
+
+	// movement acceleration
+	if (e->grounded && dominant_ground_mtv_sqrlen > 0) {
+		// ground acceleration
+		if (e->move_forward != 0 || e->move_right != 0) {
+			union vec3 a = vec3_move(e->yaw, 0, e->move_forward, e->move_right);
+			a = vec3_normalize(vec3_cross(vec3_cross(dominant_ground_mtv, a), dominant_ground_mtv));
+			float bf = 50;
+			float f = bf + vec3_dot(a, gravity_direction) * bf;
+			lvl_entity_accelerate(e, vec3_scale(a, f), dt);
+		}
+	} else {
+		// air acceleration
+		lvl_entity_accelerate(
+			e,
+			vec3_scale(vec3_move(e->yaw, 0, e->move_forward, e->move_right), 2),
+			dt);
+	}
+
+	// allow wall jumps so long as angle is less than ~80deg
+	if (ground_dot < -0.17) {
+		// TODO "jump potential energy"? like something that
+		// replenishes? to make quick consequtive jump actions have
+		// less effect? try it out!
+		lvl_entity_impulse(e, vec3_scale(dominant_ground_mtv_direction, e->move_jump * 6));
 	}
 
 	e->move_forward = 0;
@@ -321,36 +370,6 @@ void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 	e->move_jump = 0;
 
 	lvl_entity_clipmove(lvl, e, vec3_scale(e->velocity, dt));
-
-	{
-		// ground check
-		union vec3 gravity_direction = vec3_normalize(lvl->gravity);
-
-		union vec3 ground_offset = vec3_scale(gravity_direction, 3e-3);
-		struct lvl_aabb_mtv_iterator it;
-		lvl_aabb_mtv_iterator_init_from_entity_and_offset(&it, lvl, e, ground_offset);
-		union vec3 dominant_mtv = {{0,0,0}};
-		float dominant_mtv_sqrlen = 0;
-		while (lvl_aabb_mtv_iterator_next(&it)) {
-			float sqrlen = vec3_dot(it.mtv, it.mtv);
-			if (sqrlen > dominant_mtv_sqrlen) {
-				dominant_mtv_sqrlen = sqrlen;
-				dominant_mtv = it.mtv;
-			}
-		}
-
-		e->grounded = 0;
-		if (dominant_mtv_sqrlen > 0) {
-			union vec3 dominant_mtv_direction = vec3_normalize(dominant_mtv);
-
-			float dot = vec3_dot(gravity_direction, dominant_mtv_direction);
-			if (dot < 1e-3) {
-				e->grounded = 1;
-				// TODO consider slope
-				e->velocity = vec3_scale(e->velocity, powf(5e-04, dt));
-			}
-		}
-	}
 }
 
 struct mat44 lvl_entity_view(struct lvl_entity* e)

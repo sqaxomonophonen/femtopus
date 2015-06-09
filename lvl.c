@@ -2,6 +2,12 @@
 
 #include "lvl.h"
 
+static void lvl_set_gravity(struct lvl* lvl, union vec3 v)
+{
+	lvl->gravity = v;
+	lvl->gravity_normalized = vec3_normalize(lvl->gravity);
+}
+
 void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials)
 {
 	memset(lvl, 0, sizeof(*lvl));
@@ -17,7 +23,7 @@ void lvl_init(struct lvl* lvl, int n_chunks, int n_portals, int n_materials)
 	lvl->n_materials = n_materials;
 	lvl->materials = scratch_alloc(&lvl->scratch, sizeof(*lvl->materials) * n_materials);
 
-	lvl->gravity = vec3_xyz(0, -10, 0);
+	lvl_set_gravity(lvl, vec3_xyz(0, -10, 0));
 }
 
 void lvl_free(struct lvl* lvl)
@@ -219,6 +225,10 @@ static struct aabb lvl_entity_aabb(struct lvl_entity* e)
 	return aabb;
 }
 
+static float lvl_entity_max_step_up(struct lvl_entity* e)
+{
+	return 0.4f;
+}
 
 struct lvl_aabb_mtv_iterator {
 	// setup
@@ -245,6 +255,11 @@ inline static void lvl_aabb_mtv_iterator_init(struct lvl_aabb_mtv_iterator* it, 
 inline static void lvl_aabb_mtv_iterator_init_from_entity(struct lvl_aabb_mtv_iterator* it, struct lvl* lvl, struct lvl_entity* e)
 {
 	lvl_aabb_mtv_iterator_init(it, lvl, lvl_entity_aabb(e), e->chunk_index);
+}
+
+inline static void lvl_aabb_mtv_iterator_init_from_other_iterator(struct lvl_aabb_mtv_iterator* it, struct lvl_aabb_mtv_iterator* other)
+{
+	lvl_aabb_mtv_iterator_init(it, other->lvl, other->aabb, other->origin_chunk_index);
 }
 
 inline static void lvl_aabb_mtv_iterator_init_from_entity_and_offset(struct lvl_aabb_mtv_iterator* it, struct lvl* lvl, struct lvl_entity* e, union vec3 offset)
@@ -285,10 +300,20 @@ inline static int lvl_aabb_mtv_iterator_next(struct lvl_aabb_mtv_iterator* it)
 	return 0;
 }
 
+inline static int dot_is_ground(float dot)
+{
+	return dot < -0.707; // cos(45deg) ~= 0.707
+}
+
 static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec3 r)
 {
+	float rlensqr = vec3_dot(r, r);
+	if (rlensqr < 1e-5) return;
+
 	int n_steps = 8; // TODO determine based on length of r?
 	union vec3 rstep = vec3_scale(r, 1.0 / (float)n_steps);
+
+	float max_step_up = lvl_entity_max_step_up(e);
 
 	for (int i = 0; i < n_steps; i++) {
 		e->position = vec3_add(e->position, rstep);
@@ -297,9 +322,54 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 		while (lvl_aabb_mtv_iterator_next(&it)) {
 			float rmtv = vec3_length(it.mtv);
 			if (rmtv > 1e-8) {
-				union vec3 normal = vec3_scale(it.mtv, 1.0 / rmtv);
-				e->position = vec3_add(e->position, it.mtv);
-				e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
+				union vec3 mtv_normalized = vec3_normalize(it.mtv);
+				float cn = vec3_dot(lvl->gravity_normalized, mtv_normalized);
+
+				int stepped_up = 0;
+
+				if (fabsf(cn) < 0.174f) { // ~80deg
+					const int N = 6;
+					union vec3 nudge = vec3_scale(vec3_normalize(r), (max_step_up / (float)(1 << (N-1))));
+					union vec3 s = vec3_normalize(vec3_cross(vec3_cross(lvl->gravity_normalized, it.mtv), it.mtv));
+					float t = 0.5f;
+					float tinc = 0.25f;
+					for (int i = 0; i < N; i++) {
+						struct lvl_aabb_mtv_iterator it2;
+						lvl_aabb_mtv_iterator_init_from_other_iterator(&it2, &it);
+						it2.aabb.center = vec3_add(vec3_add(it2.aabb.center, vec3_scale(s, max_step_up * t)), nudge);
+						union vec3 best_mtv = {{0,0,0}};
+						float best_mtv_sqrlen = 0.0f;
+						while (lvl_aabb_mtv_iterator_next(&it2)) {
+							float mtv_sqrlen = vec3_dot(it2.mtv, it2.mtv);
+							if (mtv_sqrlen > best_mtv_sqrlen) {
+								best_mtv = it2.mtv;
+								best_mtv_sqrlen = mtv_sqrlen;
+							}
+						}
+
+						if (best_mtv_sqrlen > 0) {
+							float ground_dot = vec3_dot(vec3_normalize(best_mtv), lvl->gravity_normalized);
+							if (dot_is_ground(ground_dot)) {
+								e->position = vec3_add(e->position, best_mtv);
+								stepped_up = 1;
+								break;
+							} else {
+								t += tinc;
+							}
+						} else {
+							t -= tinc;
+						}
+
+						tinc *= 0.5f;
+					}
+				}
+
+				// normal resolution if not handling a step
+				if (!stepped_up) {
+					union vec3 normal = vec3_scale(it.mtv, 1.0 / rmtv);
+					e->position = vec3_add(e->position, it.mtv);
+					e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
+				}
 			}
 		}
 	}
@@ -308,9 +378,7 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 {
 	// ground check
-	union vec3 gravity_direction = vec3_normalize(lvl->gravity);
-
-	union vec3 ground_offset = vec3_scale(gravity_direction, 3e-3);
+	union vec3 ground_offset = vec3_scale(lvl->gravity_normalized, 3e-3);
 	struct lvl_aabb_mtv_iterator it;
 	lvl_aabb_mtv_iterator_init_from_entity_and_offset(&it, lvl, e, ground_offset);
 	union vec3 dominant_ground_mtv = {{0,0,0}};
@@ -328,9 +396,8 @@ void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 	float ground_dot = 0;
 	if (dominant_ground_mtv_sqrlen > 0) {
 		dominant_ground_mtv_direction = vec3_normalize(dominant_ground_mtv);
-
-		ground_dot = vec3_dot(gravity_direction, dominant_ground_mtv_direction);
-		if (ground_dot < -0.707) { // cos(45deg) ~= 0.707
+		ground_dot = vec3_dot(lvl->gravity_normalized, dominant_ground_mtv_direction);
+		if (dot_is_ground(ground_dot)) {
 			e->grounded = 1;
 			e->velocity = vec3_scale(e->velocity, powf(5e-04, dt));
 		}
@@ -346,7 +413,7 @@ void lvl_entity_update(struct lvl* lvl, struct lvl_entity* e, float dt)
 			union vec3 a = vec3_move(e->yaw, 0, e->move_forward, e->move_right);
 			a = vec3_normalize(vec3_cross(vec3_cross(dominant_ground_mtv, a), dominant_ground_mtv));
 			float bf = 50;
-			float f = bf + vec3_dot(a, gravity_direction) * bf;
+			float f = bf + vec3_dot(a, lvl->gravity_normalized) * bf;
 			lvl_entity_accelerate(e, vec3_scale(a, f), dt);
 		}
 	} else {

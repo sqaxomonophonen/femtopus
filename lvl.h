@@ -71,7 +71,7 @@ struct lvl {
 	int n_materials;
 	struct lvl_material* materials;
 
-	union vec3 gravity;
+	union vec3 gravity, gravity_normalized;
 };
 
 

@@ -486,10 +486,7 @@ inline static int polygon_aabb_mtv(
 		if (fabs(d) > e) {
 			return 0;
 		} else {
-			// XXX there's probably value in always pushing along
-			// the face normal, but then I'd have to make sure the
-			// normal faces the right direction.
-			float ld = (d>0 ? e : -e) - d;
+			float ld = -e - d;
 			// overlap found; check if it's better than previous results
 			if (fabsf(ld) < fabsf(best_distance)) {
 				best_distance = ld;

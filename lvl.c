@@ -336,7 +336,8 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 					for (int i = 0; i < N; i++) {
 						struct lvl_aabb_mtv_iterator it2;
 						lvl_aabb_mtv_iterator_init_from_other_iterator(&it2, &it);
-						it2.aabb.center = vec3_add(vec3_add(it2.aabb.center, vec3_scale(s, max_step_up * t)), nudge);
+						union vec3 step_up_probe = vec3_add(vec3_scale(s, max_step_up * t), nudge);
+						it2.aabb.center = vec3_add(it2.aabb.center, step_up_probe);
 						union vec3 best_mtv = {{0,0,0}};
 						float best_mtv_sqrlen = 0.0f;
 						while (lvl_aabb_mtv_iterator_next(&it2)) {
@@ -350,7 +351,8 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 						if (best_mtv_sqrlen > 0) {
 							float ground_dot = vec3_dot(vec3_normalize(best_mtv), lvl->gravity_normalized);
 							if (dot_is_ground(ground_dot)) {
-								e->position = vec3_add(e->position, best_mtv);
+								union vec3 step_up_offset = vec3_add(step_up_probe, best_mtv);
+								e->position = vec3_add(e->position, step_up_offset);
 								stepped_up = 1;
 								break;
 							} else {
@@ -369,6 +371,8 @@ static void lvl_entity_clipmove(struct lvl* lvl, struct lvl_entity* e, union vec
 					union vec3 normal = vec3_scale(it.mtv, 1.0 / rmtv);
 					e->position = vec3_add(e->position, it.mtv);
 					e->velocity = vec3_sub(e->velocity, vec3_scale(normal, vec3_dot(e->velocity, normal)));
+				} else {
+					break;
 				}
 			}
 		}

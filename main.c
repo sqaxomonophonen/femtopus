@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 	SAZ(SDL_Init(SDL_INIT_EVERYTHING));
 	atexit(SDL_Quit);
 
-	int bitmask = SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL;
+	int bitmask = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 	SDL_Window* window = SDL_CreateWindow(
 			"femtopus",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
